@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초심낚시 - 지도기반 초보자 특화 낚시 보조 플랫폼</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; }
+        .page-content { display: none; }
+        .page-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navigation Bar -->
+    <header class="bg-blue-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('index')">
+                <i data-lucide="anchor" class="w-8 h-8 text-cyan-300"></i>
+                <span class="text-2xl font-black tracking-wider">初心낚시</span>
+            </div>
+            
+            <nav class="hidden md:flex space-x-5 font-medium text-sm items-center">
+                <button onclick="navigateTo('index')" class="hover:text-cyan-200 transition">홈</button>
+                <button onclick="navigateTo('locationinfo')" class="hover:text-cyan-200 transition">지도/지역정보</button>
+                <button onclick="navigateTo('tutorial')" class="hover:text-cyan-200 transition">튜토리얼</button>
+                <button onclick="navigateTo('shop')" class="hover:text-cyan-200 transition">원데이키트</button>
+                <button onclick="navigateTo('cnn1')" class="hover:text-cyan-200 transition">어종 인식(CNN)</button>
+                <button onclick="navigateTo('allrank')" class="hover:text-cyan-200 transition">전국 랭킹</button>
+                <button onclick="navigateTo('mypage')" class="hover:text-cyan-200 transition">마이페이지</button>
+                
+                <div id="authBtnArea">
+                    <button onclick="openAuthModal()" class="bg-cyan-400 text-blue-950 px-4 py-1.5 rounded-xl hover:bg-cyan-300 font-extrabold transition shadow">로그인/회원가입</button>
+                </div>
+            </nav>
+
+            <button class="md:hidden text-white" onclick="toggleMobileMenu()">
+                <i data-lucide="menu" class="w-7 h-7"></i>
+            </button>
+        </div>
+
+        <div id="mobileMenu" class="hidden md:hidden bg-blue-800 px-4 pt-2 pb-4 space-y-2 text-sm">
+            <button onclick="navigateTo('index')" class="block w-full text-left py-2 border-b border-blue-700/50">홈</button>
+            <button onclick="navigateTo('locationinfo')" class="block w-full text-left py-2 border-b border-blue-700/50">지도/지역정보</button>
+            <button onclick="navigateTo('tutorial')" class="block w-full text-left py-2 border-b border-blue-700/50">튜토리얼</button>
+            <button onclick="navigateTo('shop')" class="block w-full text-left py-2 border-b border-blue-700/50">원데이키트</button>
+            <button onclick="navigateTo('cnn1')" class="block w-full text-left py-2 border-b border-blue-700/50">어종 인식</button>
+            <button onclick="navigateTo('allrank')" class="block w-full text-left py-2 border-b border-blue-700/50">전국 랭킹</button>
+            <button onclick="navigateTo('mypage')" class="block w-full text-left py-2">마이페이지</button>
+            <div id="mobileAuthBtnArea" class="pt-2">
+                <button onclick="openAuthModal()" class="w-full bg-cyan-400 text-blue-950 font-bold py-2 rounded-xl">로그인/회원가입</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <h3 id="modalTitle" class="text-xl font-black text-slate-800 text-center mb-4">로그인</h3>
+            <form onsubmit="handleAuthSubmit(event)" class="space-y-3">
+                <div id="nicknameInputGroup" class="hidden">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">닉네임</label>
+                    <input type="text" id="authNickname" placeholder="예: 초보강태공" class="w-full px-3.5 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">이메일 계정</label>
+                    <input type="email" id="authEmail" placeholder="example@email.com" class="w-full px-3.5 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">비밀번호</label>
+                    <input type="password" id="authPassword" placeholder="••••••••" class="w-full px-3.5 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" required>
+                </div>
+                <button type="submit" id="authSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 rounded-xl transition shadow mt-4">로그인</button>
+            </form>
+            <div class="mt-4 text-center text-xs text-slate-500">
+                <span id="authToggleText">계정이 없으신가요?</span>
+                <button onclick="toggleAuthMode()" id="authToggleBtn" class="text-blue-600 font-bold underline ml-1">회원가입하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- 1. 메인화면 -->
+        <section id="page-index" class="page-content active space-y-6">
+            <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-cyan-600 rounded-3xl p-6 md:p-12 text-white shadow-xl relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-cyan-400/20 text-cyan-200 text-xs font-bold px-3 py-1 rounded-full border border-cyan-400/30">초보자 특화 지도기반 낚시 보조 앱</span>
+                    <h1 class="text-3xl md:text-5xl font-extrabold mt-3 mb-4 leading-tight">초심낚시로 손쉬운 낚시 입문</h1>
+                    <p class="text-blue-100 text-sm md:text-base mb-6 leading-relaxed">지도 인터페이스를 통한 실시간 포인트/금어기 확인부터 CNN 어종 인식까지 한 번에[cite: 4, 5, 12]!</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="searchInput" placeholder="지역명 검색 (도/시 단위, 예: 목포, 여수...)" class="px-4 py-3.5 rounded-xl text-slate-800 w-full focus:outline-none focus:ring-4 focus:ring-cyan-300 shadow-lg text-sm">
+                        <button onclick="searchLocation()" class="bg-cyan-400 hover:bg-cyan-300 text-blue-950 font-extrabold px-6 py-3.5 rounded-xl transition shadow-lg flex items-center justify-center gap-2 shrink-0">
+                            <i data-lucide="search" class="w-5 h-5"></i> 검색
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Service Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button onclick="navigateTo('locationinfo')" class="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition text-center border border-slate-200 flex flex-col items-center group">
+                    <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-blue-600 group-hover:text-white transition"><i data-lucide="map-pin" class="w-7 h-7"></i></div>
+                    <span class="font-bold text-slate-800 text-base">지도/지역정보</span>
+                    <span class="text-xs text-slate-400 mt-1">실시간 낚시 가능 지역[cite: 4]</span>
+                </button>
+                <button onclick="navigateTo('tutorial')" class="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition text-center border border-slate-200 flex flex-col items-center group">
+                    <div class="w-14 h-14 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-cyan-600 group-hover:text-white transition"><i data-lucide="book-open" class="w-7 h-7"></i></div>
+                    <span class="font-bold text-slate-800 text-base">튜토리얼</span>
+                    <span class="text-xs text-slate-400 mt-1">카드뉴스 & 릴스 영상[cite: 3, 14, 46]</span>
+                </button>
+                <button onclick="navigateTo('shop')" class="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition text-center border border-slate-200 flex flex-col items-center group">
+                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-indigo-600 group-hover:text-white transition"><i data-lucide="shopping-bag" class="w-7 h-7"></i></div>
+                    <span class="font-bold text-slate-800 text-base">원데이키트</span>
+                    <span class="text-xs text-slate-400 mt-1">All in one 장비 세트[cite: 7, 47]</span>
+                </button>
+                <button onclick="navigateTo('cnn1')" class="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition text-center border border-slate-200 flex flex-col items-center group">
+                    <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-emerald-600 group-hover:text-white transition"><i data-lucide="camera" class="w-7 h-7"></i></div>
+                    <span class="font-bold text-slate-800 text-base">어종 인식</span>
+                    <span class="text-xs text-slate-400 mt-1">CNN 어종 분석 서비스[cite: 5, 43]</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. 지역정보 및 지도 -->
+        <section id="page-locationinfo" class="page-content space-y-6">
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-black text-blue-900 flex items-center gap-2"><i data-lucide="map-pin" class="text-blue-600"></i> 지도 기반 인터페이스 및 지역 정보[cite: 4, 44]</h2>
+                    <button onclick="navigateTo('index')" class="text-xs text-slate-500 font-bold hover:text-slate-800">&larr; 홈으로</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-50 p-5 rounded-2xl border relative">
+                        <button onclick="toggleFavorite('목포 북항 방파제', '주요어종: 다금바리, 점농어')" class="absolute top-6 right-6 p-2 rounded-full bg-white shadow text-slate-400 hover:text-rose-500 transition"><i data-lucide="heart" class="w-5 h-5"></i></button>
+                        <h4 class="font-black text-slate-800 text-lg">목포 북항 방파제</h4>
+                        <p class="text-xs text-slate-500 mt-1">주요어종: 다금바리, 점농어 | 수온: 16.5°C[cite: 4, 44]</p>
+                    </div>
+                    <div class="bg-slate-50 p-5 rounded-2xl border relative">
+                        <button onclick="toggleFavorite('고하도 선착장', '주요어종: 감성돔, 우럭')" class="absolute top-6 right-6 p-2 rounded-full bg-white shadow text-slate-400 hover:text-rose-500 transition"><i data-lucide="heart" class="w-5 h-5"></i></button>
+                        <h4 class="font-black text-slate-800 text-lg">고하도 선착장 주변</h4>
+                        <p class="text-xs text-slate-500 mt-1">주요어종: 감성돔, 우럭 | 갯벌 조수간만차 알림[cite: 4]</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 튜토리얼 (유튜브 쇼츠 릴스 연동) -->
+        <section id="page-tutorial" class="page-content space-y-6">
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-black text-slate-800 mb-6 flex items-center gap-2"><i data-lucide="book-open" class="text-cyan-600"></i> 초보자 교육 자료 (카드뉴스 & 유튜브 릴스 연동)[cite: 3, 14, 46]</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-4">
+                        <div class="p-5 bg-cyan-50/70 rounded-2xl border border-cyan-100">
+                            <span class="text-xs font-black text-cyan-700 bg-cyan-200 px-2.5 py-0.5 rounded-full">STEP 1</span>
+                            <h3 class="font-extrabold text-cyan-950 text-lg mt-2 mb-1">카드뉴스 튜토리얼 (오프라인 겸용)[cite: 46]</h3>
+                            <p class="text-xs text-slate-600">낚싯대 세팅부터 채비 묶는 법까지 슬라이드 형태로 쉽게 학습합니다.</p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border">
+                            <h4 class="font-bold text-slate-800 text-sm mb-2">💡 초보자 핵심 요약 포인트</h4>
+                            <ul class="text-xs text-slate-600 space-y-1 list-disc pl-4">
+                                <li>중지와 약지 사이에 릴 끼우기</li>
+                                <li>초릿대와 바늘 간격 20~40cm 유지</li>
+                                <li>지렛대의 원리를 이용해 자연스럽게 캐스팅</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 p-4 rounded-3xl shadow-lg flex flex-col items-center">
+                        <span class="text-xs font-bold text-cyan-300 mb-2">▶ [실전 영상] 바다낚시 초보 캐스팅 릴스</span>
+                        <div class="w-full max-w-[280px] h-[480px] rounded-2xl overflow-hidden shadow-inner border border-slate-800">
+                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/xdoyHA7gUag" title="바다낚시 초보자를 위한 캐스팅 방법" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 원데이키트 (표 구성 완료) -->
+        <section id="page-shop" class="page-content space-y-6">
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-black text-indigo-950 mb-2 flex items-center gap-2"><i data-lucide="shopping-bag" class="text-indigo-600"></i> All in one! 원데이 키트 구성[cite: 7, 47]</h2>
+                <p class="text-xs text-slate-500 mb-6">*기존 시판 키트(12만 원) 중 구성품 개수를 조정하여 8만 원까지 가격 감축 구성[cite: 47]</p>
+
+                <!-- 원데이 키트 상세 구성 표 -->
+                <div class="overflow-x-auto mb-8 border border-slate-200 rounded-2xl">
+                    <table class="w-full text-center text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-indigo-50 text-indigo-900 border-b">
+                                <th class="p-3 font-extrabold border-r bg-yellow-300 text-slate-900">구분</th>
+                                <th class="p-3 border-r">구성 1</th>
+                                <th class="p-3 border-r">구성 2</th>
+                                <th class="p-3 border-r">구성 3</th>
+                                <th class="p-3 border-r">구성 4</th>
+                                <th class="p-3">구성 5</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <tr class="bg-white">
+                                <td class="p-3 font-extrabold bg-yellow-100 text-slate-900 border-r">주 상품[cite: 47]</td>
+                                <td class="p-3 border-r font-bold">낚싯대 (1개)[cite: 7, 47]</td>
+                                <td class="p-3 border-r font-bold">스피닝 릴 (2개)[cite: 7, 47]</td>
+                                <td class="p-3 border-r font-bold">릴 받침대 (1개)[cite: 7, 47]</td>
+                                <td class="p-3 border-r font-bold">하드케이스 가방 (1개)[cite: 7, 47]</td>
+                                <td class="p-3 font-bold">태클박스 (1개)[cite: 7, 47]</td>
+                            </tr>
+                            <tr class="bg-slate-50">
+                                <td class="p-3 font-extrabold bg-yellow-100 text-slate-900 border-r">소모품목[cite: 47]</td>
+                                <td class="p-3 border-r">바늘 (4개)[cite: 7, 47]</td>
+                                <td class="p-3 border-r">끝보기캐미 (3봉)[cite: 7, 47]</td>
+                                <td class="p-3 border-r">편도래 (1봉)[cite: 7, 47]</td>
+                                <td class="p-3 border-r">묶음추 (2봉)[cite: 7, 47]</td>
+                                <td class="p-3">쪽가위, 쌍방울(3개)[cite: 7, 47]</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-gradient-to-r from-indigo-500 to-blue-600 text-white p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center shadow-lg">
+                    <div>
+                        <span class="text-xs font-extrabold bg-yellow-300 text-slate-900 px-3 py-1 rounded-full">초보자 추천 특가</span>
+                        <h3 class="text-2xl font-black mt-2">원데이 키트 풀패키지[cite: 7, 47]</h3>
+                        <p class="text-xs text-indigo-100 mt-1">입문자를 위한 필수 장비 & 소모품 올인원 세트[cite: 7, 47]</p>
+                    </div>
+                    <div class="mt-4 sm:mt-0 text-right">
+                        <span class="text-3xl font-black text-yellow-300">80,000원[cite: 7, 47]</span>
+                        <button onclick="alert('원데이 키트 주문 신청 완료!')" class="block w-full sm:w-auto mt-2 bg-white text-indigo-950 font-black px-6 py-2.5 rounded-xl text-sm hover:bg-yellow-300 transition shadow">구매하기</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. 어종 인식 (CNN) -->
+        <section id="page-cnn1" class="page-content space-y-6">
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200 text-center">
+                <h2 class="text-2xl font-black text-slate-800 mb-4">머신러닝(CNN) 기반 어종 인식 시스템[cite: 13, 43]</h2>
+                <p class="text-xs text-slate-500 mb-6">촬영한 물고기 사진을 분석하여 어종과 크기를 자동으로 판별합니다[cite: 13, 43].</p>
+                <button onclick="navigateTo('cnn2')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-8 py-3.5 rounded-xl shadow transition">어종 인식 테스트 시작하기</button>
+            </div>
+        </section>
+
+        <!-- 6. 어종 인식 결과 -->
+        <section id="page-cnn2" class="page-content space-y-6">
+            <div class="bg-white p-8 rounded-3xl shadow-sm border max-w-lg mx-auto">
+                <h2 class="text-xl font-black text-slate-800 mb-6 text-center">AI 어종 분석 및 판독 결과</h2>
+                <div class="bg-slate-50 p-5 rounded-2xl border mb-6 flex items-center space-x-4">
+                    <i data-lucide="fish" class="w-12 h-12 text-blue-600"></i>
+                    <div>
+                        <h4 class="font-black text-lg text-blue-700">황적통돔 (일치율 98.1%)[cite: 13, 43]</h4>
+                        <p class="text-xs text-slate-500">추정 크기: 45.2 cm | 금어종 여부: 정상[cite: 13]</p>
+                    </div>
+                </div>
+                <button onclick="saveCatchLog('황적통돔', '45.2cm')" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mb-2">내 조과 기록에 저장</button>
+                <button onclick="navigateTo('uploadmylank')" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl">전국 랭킹 등록하기</button>
+            </div>
+        </section>
+
+        <!-- 7. 마이페이지 -->
+        <section id="page-mypage" class="page-content space-y-6">
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border">
+                <div class="flex items-center space-x-4 border-b pb-6 mb-6">
+                    <div class="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black text-2xl">初心</div>
+                    <div>
+                        <h2 id="myPageNickname" class="text-xl font-black text-slate-800">손님 (비로그인)</h2>
+                        <p id="myPageEmail" class="text-xs text-slate-400 mt-1">로그인이 필요합니다.</p>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="font-extrabold text-slate-800 mb-3 text-lg flex items-center gap-2"><i data-lucide="heart" class="text-rose-500"></i> 나의 찜한 스팟 (비밀 핀 보관함)[cite: 4]</h3>
+                    <div id="favoriteSpotsContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <p class="text-xs text-slate-400 col-span-3">찜한 스팟이 없습니다.</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-extrabold text-slate-800 mb-3 text-lg flex items-center gap-2"><i data-lucide="archive" class="text-blue-600"></i> 내 조과 기록 보관함</h3>
+                    <div id="catchLogsContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. 전국 랭킹 -->
+        <section id="page-allrank" class="page-content space-y-6">
+            <div class="bg-white p-8 rounded-3xl shadow-sm border text-center">
+                <h2 class="text-2xl font-black text-slate-800 mb-2">전국 실시간 랭킹[cite: 33]</h2>
+                <div class="flex justify-center gap-2 mb-6">
+                    <button onclick="navigateTo('allrank')" class="bg-blue-600 text-white font-bold text-xs px-4 py-2 rounded-xl">전국 랭킹</button>
+                    <button onclick="navigateTo('fishrank')" class="bg-slate-100 text-slate-700 font-bold text-xs px-4 py-2 rounded-xl">어종별 랭킹</button>
+                </div>
+                <p class="text-sm font-bold text-slate-700">1위 강태공99 (황적통돔 45.2cm)[cite: 43]</p>
+            </div>
+        </section>
+
+        <!-- 9. 어종별 랭킹 -->
+        <section id="page-fishrank" class="page-content space-y-6">
+            <div class="bg-white p-8 rounded-3xl shadow-sm border">
+                <h2 class="text-xl font-black text-slate-800 mb-4">어종별 명예의 전당</h2>
+                <div id="rankingListContainer" class="space-y-3 mb-6">
+                    <div class="p-4 bg-amber-50 rounded-2xl border flex justify-between items-center">
+                        <div><p class="font-bold text-amber-900">🥇 1등 강태공99 (황적통돔)</p><p class="text-xs text-slate-500">인증 크기: 45.2 cm[cite: 43]</p></div>
+                        <span class="text-xs bg-amber-200 text-amber-800 px-2 py-1 rounded font-bold">인증 완료</span>
+                    </div>
+                </div>
+                <button onclick="navigateTo('uploadmylank')" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl">내 순위 등록하러 가기</button>
+            </div>
+        </section>
+
+        <!-- 10. 랭킹 업로드 -->
+        <section id="page-uploadmylank" class="page-content space-y-6">
+            <div class="bg-white p-8 rounded-3xl shadow-sm border max-w-md mx-auto">
+                <h2 class="text-xl font-black text-slate-800 mb-6 text-center">내 랭킹 신청하기 (조과 업로드)</h2>
+                <form onsubmit="submitRanking(event);" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">어종 선택</label>
+                        <select id="rankingFishType" class="w-full px-3.5 py-2.5 border rounded-xl text-sm font-bold">
+                            <option value="황적통돔">황적통돔[cite: 43]</option>
+                            <option value="다금바리">다금바리[cite: 44]</option>
+                            <option value="점농어">점농어[cite: 44]</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">물고기 크기 (cm)</label>
+                        <input type="number" id="rankingFishSize" step="0.1" placeholder="예: 45.2" class="w-full px-3.5 py-2.5 border rounded-xl text-sm" required>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-500 text-white font-black py-3.5 rounded-xl">업로드 하러가기!!</button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p class="font-bold text-slate-200">初心낚시 - 초보자 특화 지도기반 낚시 보조 앱</p>
+            <p>© 2026 초심낚시 All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Script Integration -->
+    <script>
+        lucide.createIcons();
+        let isSignUpMode = false;
+
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            const target = document.getElementById('page-' + pageId);
+            if (target) target.classList.add('active');
+            document.getElementById('mobileMenu').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('hidden'); }
+
+        function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
+        function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
+
+        function toggleAuthMode() {
+            isSignUpMode = !isSignUpMode;
+            document.getElementById('modalTitle').innerText = isSignUpMode ? '회원가입' : '로그인';
+            document.getElementById('nicknameInputGroup').classList.toggle('hidden', !isSignUpMode);
+            document.getElementById('authSubmitBtn').innerText = isSignUpMode ? '회원가입 완료' : '로그인';
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const nickname = isSignUpMode ? document.getElementById('authNickname').value : email.split('@')[0];
+            localStorage.setItem('userSession', JSON.stringify({ email, nickname }));
+            alert(`${nickname}님 환영합니다!`);
+            closeAuthModal();
+            updateAuthUI();
+        }
+
+        function logout() {
+            localStorage.removeItem('userSession');
+            alert('로그아웃 되었습니다.');
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
+            const user = JSON.parse(localStorage.getItem('userSession'));
+            const authArea = document.getElementById('authBtnArea');
+            const myNickname = document.getElementById('myPageNickname');
+            const myEmail = document.getElementById('myPageEmail');
+
+            if (user) {
+                authArea.innerHTML = `<div class="flex items-center space-x-2"><span class="text-xs font-bold text-cyan-200">${user.nickname}님</span><button onclick="logout()" class="bg-rose-500 text-white text-xs px-3 py-1.5 rounded-xl font-bold">로그아웃</button></div>`;
+                if (myNickname) myNickname.innerText = user.nickname;
+                if (myEmail) myEmail.innerText = user.email;
+            } else {
+                authArea.innerHTML = `<button onclick="openAuthModal()" class="bg-cyan-400 text-blue-950 px-4 py-1.5 rounded-xl font-extrabold">로그인/회원가입</button>`;
+                if (myNickname) myNickname.innerText = '손님 (비로그인)';
+                if (myEmail) myEmail.innerText = '로그인이 필요합니다.';
+            }
+        }
+
+        function toggleFavorite(spotName, info) {
+            let favs = JSON.parse(localStorage.getItem('favoriteSpots')) || [];
+            const exists = favs.some(f => f.name === spotName);
+            if (exists) {
+                favs = favs.filter(f => f.name !== spotName);
+                alert(`"${spotName}" 찜 해제되었습니다.`);
+            } else {
+                favs.push({ name: spotName, info });
+                alert(`"${spotName}" 비밀 핀 보관함에 찜 되었습니다![cite: 4]`);
+            }
+            localStorage.setItem('favoriteSpots', JSON.stringify(favs));
+            renderFavorites();
+        }
+
+        function renderFavorites() {
+            const favs = JSON.parse(localStorage.getItem('favoriteSpots')) || [];
+            const container = document.getElementById('favoriteSpotsContainer');
+            if (!container) return;
+            if (favs.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 col-span-3">찜한 스팟이 없습니다.</p>`;
+                return;
+            }
+            container.innerHTML = favs.map(f => `
+                <div class="p-4 bg-rose-50 rounded-2xl border border-rose-100 flex justify-between items-center">
+                    <div><h4 class="font-bold text-sm">${f.name}</h4><p class="text-xs text-slate-500">${f.info}</p></div>
+                    <button onclick="toggleFavorite('${f.name}', '${f.info}')" class="text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function saveCatchLog(fish, size) {
+            let logs = JSON.parse(localStorage.getItem('catchLogs')) || [];
+            logs.unshift({ fish, size });
+            localStorage.setItem('catchLogs', JSON.stringify(logs));
+            alert('조과 기록이 저장되었습니다.');
+            renderLogs();
+            navigateTo('mypage');
+        }
+
+        function renderLogs() {
+            let logs = JSON.parse(localStorage.getItem('catchLogs')) || [{ fish: '황적통돔', size: '45.2cm' }];
+            const container = document.getElementById('catchLogsContainer');
+            if (!container) return;
+            container.innerHTML = logs.map(l => `
+                <div class="p-4 bg-slate-50 rounded-2xl border flex items-center space-x-3">
+                    <i data-lucide="fish" class="w-8 h-8 text-blue-500"></i>
+                    <div><h4 class="font-bold text-sm">${l.fish}</h4><p class="text-xs text-slate-500">${l.size}</p></div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function submitRanking(e) {
+            e.preventDefault();
+            const user = JSON.parse(localStorage.getItem('userSession')) || { nickname: '초보낚시꾼' };
+            const fish = document.getElementById('rankingFishType').value;
+            const size = document.getElementById('rankingFishSize').value;
+            const container = document.getElementById('rankingListContainer');
+            if (container) {
+                const div = document.createElement('div');
+                div.className = "p-4 bg-blue-50 rounded-2xl border flex justify-between items-center";
+                div.innerHTML = `<div><p class="font-bold">${user.nickname} (${fish})</p><p class="text-xs text-slate-500">${size} cm</p></div><span class="text-xs bg-blue-200 px-2 py-1 rounded font-bold">NEW</span>`;
+                container.prepend(div);
+            }
+            alert('랭킹 신청 완료!');
+            navigateTo('fishrank');
+        }
+
+        function searchLocation() {
+            const query = document.getElementById('searchInput').value;
+            if(!query) { alert('지역명을 입력해주세요.'); return; }
+            alert(`"${query}" 지역 지도 인터페이스 및 실시간 날씨 정보 조회`);
+            navigateTo('locationinfo');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateAuthUI();
+            renderFavorites();
+            renderLogs();
+        });
+    </script>
+</body>
+</html>
